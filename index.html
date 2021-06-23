@@ -1,1 +1,329 @@
-Hi draw!
+<html>
+<head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="mobile-web-app-capable" content="yes">
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.10.0/css/all.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.4.5/jscolor.min.js"></script>
+<style>
+html, body{
+ background:#fff
+}
+.clear{
+ clear:both
+}
+/* Hide the browser's default checkbox */
+.container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkmark {
+ height:25px;
+ width:25px;
+ padding:8px
+}
+
+/* When the checkbox is checked, add a blue background */
+.container input:checked ~ .checkmark {
+  background-color: #ffcaca;
+}
+
+.instruments{
+    background:#cdcdcd;
+    position:fixed;
+    top:0;
+    left:0;
+    overflow:visible;
+    border:0;
+    height:1px;
+    width:100%;
+    margin:0;
+    padding:0;
+}
+.picker{
+    text-align:center;
+    border-radius:4px;
+    border-collapse: collapse;
+    border:1px solid #cdcdcd;
+	box-sizing: border-box;
+    box-shadow: 8px 5px 5px #aeaeae;
+    background:#FFF;
+    position:relative;
+    float:left;
+    margin-left:5px;
+    padding:0;
+    height:30px;
+    width:30px;
+    cursor:pointer;
+    margin-top:5px;
+    overflow:hidden;
+}
+.picker i {
+ margin-top: 5px
+}
+
+.picker select, .picker select:hover, .picker select:active{
+	top:-5px;
+	left:-5px;
+	border:0 !important;
+	line-height:30px;
+	height:30px;
+
+}
+
+.picker:hover{
+    border-collapse: collapse;
+	border-radius:4px;
+    border-bottom:4px solid #444;
+}
+body, #canvas, #canvasimg{
+    touch-action: none;
+}
+input[type="file"] {
+    display: none;
+}
+</style>
+<script type="text/javascript">
+let d = console.log
+
+function fTrack(e){
+	trackFinger = e.checked ? true : false;
+}
+
+var ctx, canvas, isDrawing, points = [ ]
+var img = new Image
+var canvasHistoryLimit = 10
+var brushColor = '#000'
+var fillStyle = '#ffffff'
+var lineWidth = 3
+var strokes = 0
+var canvasHistory = {pos:0,img:[]}
+
+function setBrushSize(size){
+	lineWidth = size
+}
+
+function upload(data, cb) {
+    img = new Image()
+    img.onload = () => {
+		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+		ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height) // CPU intensive operation (Easy but ugly fix for smooter quadratic curve)
+		img = new Image
+		img.src = canvas.toDataURL("image/png")
+    }
+	let reader = new FileReader();
+		reader.onload = () => {
+			img.src = reader.result
+		}
+		reader.readAsDataURL(data)
+}
+
+function eraser(){
+	brushColor = fillStyle
+}
+
+function erase(){
+	img = new Image()
+	initCanvas()
+}
+
+function save() {
+  var element = document.createElement('a');
+  element.setAttribute('href', img.src);
+  element.setAttribute('download', 'draw.png');
+  element.style.display = 'none';
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
+}
+
+function initCanvas(){
+	canvas = document.getElementById('canvas')
+	canvas.style.position = 'absolute'
+	canvas.height = window.innerHeight;
+	canvas.width = window.innerWidth;
+	canvas.style.top = 0
+	canvas.style.left = 0
+	ctx = canvas.getContext('2d')
+	ctx.fillStyle = fillStyle
+	ctx.imageSmoothingEnabled = true
+	ctx.lineJoin = ctx.lineCap = 'round'
+//	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+//	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+//	img.src = canvas.toDataURL("image/png")
+	ctx.drawImage(img, 0, 0, img.width, img.height)
+//	d(window.visualViewport.scale)
+}
+
+function paint(e){
+	strokes++
+	points.push({ x: e.clientX, y: e.clientY })
+
+//	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+//	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+//	ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height) // CPU intensive operation (Easy but ugly fix for smooter quadratic curve)
+	ctx.drawImage(img, 0, 0, img.width, img.height)
+
+	ctx.beginPath()
+	ctx.moveTo(points[0].x, points[0].y);
+
+	ctx.strokeStyle = brushColor
+	ctx.lineWidth = lineWidth // (e.pressure * 10) < 0.20 ? e.pressure : e.pressure * 10;
+	for (i = 1; i < points.length - 2; i ++)
+	{
+		var xc = (points[i].x + points[i + 1].x) / 2;
+		var yc = (points[i].y + points[i + 1].y) / 2;
+		ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+	}
+// curve through the last two points
+// ctx.quadraticCurveTo(points[i].x, points[i].y, points[i+1].x,points[i+1].y);
+
+	ctx.stroke()
+	ctx.closePath()
+}
+
+function canvasHistoryUndo(){
+	canvasHistory.pos = canvasHistory.pos - 1 < 0 ?  0 : canvasHistory.pos - 1
+	img = canvasHistory.img[canvasHistory.pos]
+	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+	ctx.drawImage(img, 0, 0, img.width, img.height)
+}
+
+function canvasHistoryRedo(){
+	canvasHistory.pos = canvasHistory.pos + 1 >= canvasHistory.img.length ?  canvasHistory.img.length - 1 : canvasHistory.pos + 1
+	img = canvasHistory.img[canvasHistory.pos]
+	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+	ctx.drawImage(img, 0, 0, img.width, img.height)
+}
+
+function canvasHistoryPush(){
+	img = new Image
+	img.src = canvas.toDataURL("image/png")
+	if( canvasHistory.img.length > canvasHistoryLimit ) canvasHistory.img.shift()
+	canvasHistory.img.push(img)
+	canvasHistory.pos = canvasHistory.img.length - 1
+}
+
+function init() {
+
+	initCanvas()
+	document.getElementById('brushSizePicker').value = lineWidth
+
+	canvas.onpointerdown =  e => {
+
+		if(e.pointerType == 'touch' && !trackFinger) return;
+		isDrawing = true
+		points.push({ x: e.clientX, y: e.clientY })
+		canvas.addEventListener('pointermove',paint,false)
+	}
+
+	canvas.onpointerup = canvas.onpointerout = (e) => {
+		canvas.removeEventListener('pointermove',paint,false)
+		isDrawing = false
+		points = []
+		points.length = 0
+
+		if(e.type === 'pointerup') canvasHistoryPush()
+	}
+
+	let myPicker = new JSColor('#cPicker', {format:'rgba'})
+	myPicker.option('previewSize', 400)
+	myPicker.option({
+		'width': 101,
+		'position': 'right',
+		'backgroundColor': '#333',
+		'onChange':color,
+		'value':brushColor
+	})
+	document.getElementById('cPicker').style.background = brushColor
+
+
+}
+
+function color(obj) {
+	brushColor = document.querySelector('#cPicker').dataset.currentColor
+}
+
+function toggleFullscreen() {
+  let elem = document.querySelector("body")
+  if (!document.fullscreenElement) {
+    elem.requestFullscreen().catch(err => {
+      alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`)
+    })
+  } else {
+    document.exitFullscreen()
+  }
+  screen.orientation.lock(screen.orientation.type) // Lock to current orientation type
+  initCanvas()
+}
+
+window.onresize = initCanvas;
+
+</script>
+</head>
+<body onload="init()">
+    <canvas id="canvas" style="object-fit:contain;"></canvas>
+    <div class="instruments">
+		<div class="picker" id="cPicker" ></div>
+        <div class="picker" onclick="eraser()"      ><i class="fas fa-eraser"></i></div>
+        <div class="picker">
+			<select id="brushSizePicker" onchange="setBrushSize(this.value)">
+				<option value=1  >1 </option>
+				<option value=2  >2 </option>
+				<option value=3  >3 </option>
+				<option value=4  >4 </option>
+				<option value=5  >5 </option>
+				<option value=6  >6 </option>
+				<option value=7  >7 </option>
+				<option value=8  >8 </option>
+				<option value=9  >9 </option>
+				<option value=10 >10</option>
+				<option value=11 >11</option>
+				<option value=12 >12</option>
+				<option value=13 >13</option>
+				<option value=14 >14</option>
+				<option value=15 >15</option>
+				<option value=16 >16</option>
+				<option value=17 >17</option>
+				<option value=18 >18</option>
+				<option value=19 >19</option>
+				<option value=20 >20</option>
+
+			</select>
+		</div>
+		<div class="picker" >
+			<label class="container">
+			<input id="trackFinger" type="checkbox" checked="checked" onchange="fTrack(this)">
+			<span class="checkmark"><i class="fa fa-fingerprint"></i></span>
+			</label>
+        </div>
+        <div class="picker"     >
+			<label class="custom-file-upload">
+				<input type='file' onchange="upload(this.files[0])"/>
+				<i class="fas fa-upload"></i>
+			</label>
+        </div>
+        <div class="picker" onclick="erase()"     ><i class="fas fa-window-close"></i></div>
+        <div class="clear"></div>
+        <div class="picker" onclick="save()"        ><i class="fas fa-save"></i></div>
+        <div class="clear"></div>
+        <div class="picker" onclick="toggleFullscreen()"     ><i class="fas fa-expand-arrows-alt"></i></div>
+        <div class="clear"></div>
+        <div class="picker" onclick="location.reload()"      ><i class="fas fa-sync-alt"></i></div>
+        <div class="clear"></div>
+        <div class="picker" onclick="canvasHistoryUndo()"    ><i class="fas fa-undo-alt"></i></div>
+        <div class="clear"></div>
+        <div class="picker" onclick="canvasHistoryRedo()"    ><i class="fas fa-redo-alt"></i></div>
+    </div>
+
+<style> #debug{ height:100px; overflow:auto; border:1px solid red; } </style>
+<script> var debug = t => { var d = document.getElementById('debug'); d.innerHTML = t + '<br />' + d.innerHTML } </script>
+<div id=debug style="display:none"></div>
+
+</body>
+</html>
