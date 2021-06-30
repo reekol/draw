@@ -270,7 +270,12 @@ function init() {
 		'onChange':color,
 		'value':brushColor,
 		'hideOnPaletteClick:true':true,
-		'palette': '#fff #000 #808080 #996e36 #f55525 #ffe438 #88dd20 #22e0cd #269aff #bb1cd4',
+		'palette': [
+        '#000000', '#7d7d7d', '#870014', '#ec1c23', '#ff7e26',
+        '#fef100', '#22b14b', '#00a1e7', '#3f47cc', '#a349a4',
+        '#ffffff', '#c3c3c3', '#b87957', '#feaec9', '#ffc80d',
+        '#eee3af', '#b5e61d', '#99d9ea', '#7092be', '#c8bfe7',
+    ],
 	})
 	document.getElementById('cPicker').style.background = brushColor
 
