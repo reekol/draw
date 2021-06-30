@@ -135,14 +135,18 @@ function setBrushSize(size){
 
 function upload(data, cb) {
     img = new Image()
-    img.onload = () => {
+	img.onload = function() {
 		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-		ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height)
-//		ctx.drawImage(img, 0, 0, img.width, img.height)
+		// scale to fit
+		let scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+		// get the top left position of the image
+		let x = (canvas.width / 2) - (img.width / 2) * scale;
+		let y = (canvas.height / 2) - (img.height / 2) * scale;
+		ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
 		img = new Image
 		img.src = canvas.toDataURL("image/png")
 		canvasHistoryPush()
-    }
+	}
 	let reader = new FileReader();
 		reader.onload = () => {
 			img.src = reader.result
@@ -269,7 +273,6 @@ function init() {
 		'backgroundColor': '#333',
 		'onChange':color,
 		'value':brushColor,
-		'hideOnPaletteClick:true':true,
 		'palette': [
         '#000000', '#7d7d7d', '#870014', '#ec1c23', '#ff7e26',
         '#fef100', '#22b14b', '#00a1e7', '#3f47cc', '#a349a4',
@@ -338,7 +341,7 @@ window.onresize = initCanvas;
     <div class="instruments">
 		<div class="picker" id="cPicker" ondblclick="jscolor.hide()" ></div>
         <div class="picker" style="width:110px;padding-top:3px">
-       		<input style="width:100px" type="range" min="1" max="30" id="brushSizePicker" onchange="setBrushSize(this.value)" />
+       		<input style="width:100px" type="range" min="1" max="40" id="brushSizePicker" onchange="setBrushSize(this.value)" />
 		</div>
         <div class="picker" onclick="eraser()"      ><i class="fas fa-eraser"></i></div>
 		<div class="picker" >
