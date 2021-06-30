@@ -308,23 +308,24 @@ window.onresize = initCanvas;
     <canvas id="canvas" style="object-fit:contain;"></canvas>
     <div class="instruments">
 		<div class="picker" id="cPicker" ondblclick="jscolor.hide()" ></div>
-        <div class="picker" style="width:110px;padding-top:3px">
+        <div class="picker" onclick="eraser()"      ><i class="fas fa-eraser"></i></div>
+		<div class="picker" style="width:110px;padding-top:3px">
        		<input style="width:100px" type="range" min="1" max="40" id="brushSizePicker" onchange="setBrushSize(this.value)" />
 		</div>
-        <div class="picker" onclick="eraser()"      ><i class="fas fa-eraser"></i></div>
+        <div class="clear"></div>
 		<div class="picker" >
 			<label class="container">
 			<input id="trackFinger" type="checkbox" checked="checked" onchange="fTrack(this)">
 			<span class="checkmark"><i class="fa fa-fingerprint"></i></span>
 			</label>
         </div>
+        <div class="clear"></div>
         <div class="picker"     >
 			<label class="custom-file-upload">
 				<input type='file' onchange="upload(this.files[0])"/>
 				<i class="fas fa-upload"></i>
 			</label>
         </div>
-        <div class="picker" onclick="erase()"     			><i class="fas fa-window-close"></i></div>
         <div class="clear"></div>
         <div class="picker" onclick="save()"        		><i class="fas fa-save"></i></div>
         <div class="clear"></div>
@@ -335,6 +336,8 @@ window.onresize = initCanvas;
         <div class="picker" onclick="canvasHistoryUndo()"   ><i class="fas fa-undo-alt"></i></div>
         <div class="clear"></div>
         <div class="picker" onclick="canvasHistoryRedo()"   ><i class="fas fa-redo-alt"></i></div>
+        <div class="clear"></div>
+        <div class="picker" onclick="erase()"     			><i class="fas fa-window-close"></i></div>
     </div>
 
 <style> #debug{ height:100px; overflow:auto; border:1px solid red; } </style>
