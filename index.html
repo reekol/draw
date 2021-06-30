@@ -141,6 +141,7 @@ function upload(data, cb) {
 //		ctx.drawImage(img, 0, 0, img.width, img.height)
 		img = new Image
 		img.src = canvas.toDataURL("image/png")
+		canvasHistoryPush()
     }
 	let reader = new FileReader();
 		reader.onload = () => {
