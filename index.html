@@ -94,7 +94,7 @@ function fTrack(e){
 	trackFinger = e.checked ? true : false;
 }
 
-var ctx, canvas, isDrawing, points = [ ]
+var ctx, canvas, isDrawing, hwr, strokesArr = [], points = [ ]
 var img = new Image
 var canvasHistoryLimit = 10
 var brushColor = '#000'
@@ -161,6 +161,7 @@ function eraser(){
 function erase(){
 	img = new Image()
 	initCanvas()
+	hwr.innerHTML = ''
 }
 
 function save() {
@@ -174,6 +175,7 @@ function save() {
 }
 
 function initCanvas(){
+	strokesArr = []
 	canvas = document.getElementById('canvas')
 	canvas.style.position = 'absolute'
 	canvas.height = window.innerHeight;
@@ -198,6 +200,24 @@ function KeyPress(e) {
       if (evtobj.keyCode == 90 && evtobj.ctrlKey &&  evtobj.shiftKey ) canvasHistoryRedo()
 }
 
+async function handWriting(){
+	let res = await postData(
+			'https://www.google.com.tw/inputtools/request?ime=handwriting&app=mobilesearch&cs=1&oe=UTF-8',
+			'POST',
+			{
+				"options": "enable_pre_space",
+				"requests": [{
+					"writing_guide": {
+						"writing_area_width": canvas.width,
+						"writing_area_height": canvas.height
+					},
+					"ink": strokesArr,
+					"language": "en"
+				}]
+			}
+		)
+	if(res[0] === 'SUCCESS') hwr.innerHTML = (res[1][0][1].join(', '))
+}
 function paint(e){
 
 	strokes++
@@ -255,6 +275,7 @@ function canvasHistoryPush(){
 function init() {
 
 	initCanvas()
+	hwr = document.getElementById('hwr')
 	document.getElementById('brushSizePicker').value = lineWidth
 
 	canvas.onpointerdown =  e => {
@@ -267,11 +288,22 @@ function init() {
 
 	canvas.onpointerup = canvas.onpointerout = (e) => {
 		canvas.removeEventListener('pointermove',paint,false)
+		if(e.type === 'pointerup'){
+			let x = []
+			let y = []
+			for (let i of points)
+			{
+				x.push(i.x)
+				y.push(i.y)
+			}
+			strokesArr.push([x,y])
+			handWriting()
+			canvasHistoryPush()
+		}
+
 		isDrawing = false
 		points = []
 		points.length = 0
-
-		if(e.type === 'pointerup') canvasHistoryPush()
 	}
 
 	let myPicker = new JSColor('#cPicker', {format:'rgba'})
@@ -321,7 +353,6 @@ window.onresize = initCanvas;
 		<div class="picker" style="width:110px;padding-top:3px">
        		<input style="width:100px" type="range" min="1" max="40" id="brushSizePicker" onchange="setBrushSize(this.value)" />
 		</div>
-        <div class="clear"></div>
 		<div class="picker" >
 			<label class="container">
 			<input id="trackFinger" type="checkbox" checked="checked" onchange="fTrack(this)">
@@ -347,6 +378,9 @@ window.onresize = initCanvas;
         <div class="picker" onclick="canvasHistoryRedo()"   ><i class="fas fa-redo-alt"></i></div>
         <div class="clear"></div>
         <div class="picker" onclick="erase()"     			><i class="fas fa-window-close"></i></div>
+		<div class="picker" id="hwr" style="width:110px;height:200;padding-top:3px;margin-right:10px;position:fixed;top:0px;right:0">
+		</div>
+
     </div>
 
 <style> #debug{ height:100px; overflow:auto; border:1px solid red; } </style>
