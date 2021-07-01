@@ -94,7 +94,14 @@ function fTrack(e){
 	trackFinger = e.checked ? true : false;
 }
 
+function hwrToggle(e){
+	hwrEnable = e.checked ? true : false;
+	hwr.style.display = hwrEnable ? 'block' : 'none'
+}
+
 var ctx, canvas, isDrawing, hwr, strokesArr = [], points = [ ]
+var hwrEnable = true
+var trackFinger = true
 var img = new Image
 var canvasHistoryLimit = 10
 var brushColor = '#000'
@@ -201,6 +208,7 @@ function KeyPress(e) {
 }
 
 async function handWriting(){
+	if(!hwrEnable) return false;
 	let res = await postData(
 			'https://www.google.com.tw/inputtools/request?ime=handwriting&app=mobilesearch&cs=1&oe=UTF-8',
 			'POST',
@@ -357,6 +365,12 @@ window.onresize = initCanvas;
 			<label class="container">
 			<input id="trackFinger" type="checkbox" checked="checked" onchange="fTrack(this)">
 			<span class="checkmark"><i class="fa fa-fingerprint"></i></span>
+			</label>
+        </div>
+		<div class="picker" >
+			<label class="container">
+			<input id="hwrEnable" type="checkbox" checked="checked" onchange="hwrToggle(this)">
+			<span class="checkmark"><i class="fa fa-edit"></i></span>
 			</label>
         </div>
         <div class="clear"></div>
