@@ -128,12 +128,19 @@ async function postData(url = '', method = 'PUT', data = {}) {
     mode: 'cors', // no-cors, *cors, same-origin
     cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
     credentials: 'same-origin', // include, *same-origin, omit
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+		'Content-Type': 'application/json; charset=utf-8',
+	},
     redirect: 'follow', // manual, *follow, error
     referrerPolicy: 'no-referrer',
-    body: JSON.stringify(data)
+    body: (method === 'GET' ? null : JSON.stringify(data) )
   })
   return response.json()
+}
+
+async function getWiki(term){
+  let res = await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${term}&limit=1&origin=*`)
+  return res.json()
 }
 
 function setBrushSize(size){
@@ -220,11 +227,22 @@ async function handWriting(){
 						"writing_area_height": canvas.height
 					},
 					"ink": strokesArr,
-					"language": "en"
+					"language": "en",
 				}]
 			}
 		)
-	if(res[0] === 'SUCCESS') hwr.innerHTML = (res[1][0][1].join(', '))
+	if(res[0] === 'SUCCESS'){
+		res = (res[1][0][1].splice(0,4))
+		d(res[0].length)
+		if(typeof res[0] === 'undefined') return
+		hwr.innerHTML = res.join(', ')
+
+		if(res[0].length < 4 ) return
+		let wiki = await getWiki(res[0])
+		res[0] = `<a href="${wiki[3][0]}" target="_new">${res[0]}</a>`
+		hwr.innerHTML = res.join(', ')
+	}
+
 }
 function paint(e){
 
@@ -354,12 +372,12 @@ window.onresize = initCanvas;
 </script>
 </head>
 <body onload="init()">
-    <canvas id="canvas" style="object-fit:contain;"></canvas>
+	<canvas id="canvas" style="object-fit:contain;"></canvas>
     <div class="instruments">
 		<div class="picker" id="cPicker" ondblclick="jscolor.hide()" ></div>
-        <div class="picker" onclick="eraser()"      ><i class="fas fa-eraser"></i></div>
+		<div class="picker" onclick="eraser()"      ><i class="fas fa-eraser"></i></div>
 		<div class="picker" style="width:110px;padding-top:3px">
-       		<input style="width:100px" type="range" min="1" max="40" id="brushSizePicker" onchange="setBrushSize(this.value)" />
+			<input style="width:100px" type="range" min="1" max="40" id="brushSizePicker" onchange="setBrushSize(this.value)" />
 		</div>
 		<div class="picker" >
 			<label class="container">
@@ -372,30 +390,29 @@ window.onresize = initCanvas;
 			<input id="hwrEnable" type="checkbox" checked="checked" onchange="hwrToggle(this)">
 			<span class="checkmark"><i class="fa fa-edit"></i></span>
 			</label>
-        </div>
-        <div class="clear"></div>
-        <div class="picker"     >
+		</div>
+		<div class="clear"></div>
+		<div class="picker"     >
 			<label class="custom-file-upload">
 				<input type='file' onchange="upload(this.files[0])"/>
 				<i class="fas fa-upload"></i>
 			</label>
-        </div>
-        <div class="clear"></div>
-        <div class="picker" onclick="save()"        		><i class="fas fa-save"></i></div>
-        <div class="clear"></div>
-        <div class="picker" onclick="toggleFullscreen()"    ><i class="fas fa-expand-arrows-alt"></i></div>
-        <div class="clear"></div>
-        <div class="picker" onclick="location.reload()"     ><i class="fas fa-sync-alt"></i></div>
-        <div class="clear"></div>
-        <div class="picker" onclick="canvasHistoryUndo()"   ><i class="fas fa-undo-alt"></i></div>
-        <div class="clear"></div>
-        <div class="picker" onclick="canvasHistoryRedo()"   ><i class="fas fa-redo-alt"></i></div>
-        <div class="clear"></div>
-        <div class="picker" onclick="erase()"     			><i class="fas fa-window-close"></i></div>
-		<div class="picker" id="hwr" style="width:110px;height:200;padding-top:3px;margin-right:10px;position:fixed;top:0px;right:0">
 		</div>
-
-    </div>
+		<div class="clear"></div>
+		<div class="picker" onclick="save()"        		><i class="fas fa-save"></i></div>
+		<div class="clear"></div>
+		<div class="picker" onclick="toggleFullscreen()"    ><i class="fas fa-expand-arrows-alt"></i></div>
+		<div class="clear"></div>
+		<div class="picker" onclick="location.reload()"     ><i class="fas fa-sync-alt"></i></div>
+		<div class="clear"></div>
+		<div class="picker" onclick="canvasHistoryUndo()"   ><i class="fas fa-undo-alt"></i></div>
+		<div class="clear"></div>
+		<div class="picker" onclick="canvasHistoryRedo()"	><i class="fas fa-redo-alt"></i></div>
+		<div class="clear"></div>
+		<div class="picker" onclick="erase()"     			><i class="fas fa-window-close"></i></div>
+		<div class="picker" id="hwr" style="width:110px;height:280;padding-top:3px;margin-right:10px;position:fixed;top:0px;right:0">
+		</div>
+	</div>
 
 <style> #debug{ height:100px; overflow:auto; border:1px solid red; } </style>
 <script> var debug = t => { var d = document.getElementById('debug'); d.innerHTML = t + '<br />' + d.innerHTML } </script>
