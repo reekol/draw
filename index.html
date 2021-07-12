@@ -1,385 +1,128 @@
 <html>
 <head>
 	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, shrink-to-fit=no, user-scalable=no">
 	<meta name="mobile-web-app-capable" content="yes">
 	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.10.0/css/all.css">
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.4.5/jscolor.min.js"></script>
 <style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  #canvas, #canvas * {
-    visibility: visible;
-  }
-  #canvas {
+:root {
+--section1-color: #ffffff;
+--section2-color: #ffffff;
+--section3-color: #ffffff;
+--section4-color: #ffffff;
+--light-color: #737373;
+--nav-color: #cdcdcd;
+}
+
+html, body { height: 100% }
+
+.container {
+  background: var(--light-color);;
+  min-height: 100vh;
+  font-family: Montserrat, sans-serif;
+}
+
+section {
+	position: absolute;
+	top: 0;
+	height: 100vh;
+	width: 0;
+	opacity: 0;
+	transition: all ease-in .5s;
+/*    display: flex; */
+	text-align:right;
+	justify-content: right;
+	align-items: right;
+	padding-right:30px;
+	padding-top:5vw;
+}
+
+nav {
+	position: absolute;
+	left: 0;
+	top:0;
+	z-index: 50;
+	display: flex;
+	background: var(--nav-color);
+}
+
+@media (orientation: landscape) {
+	nav {
+		height:100vh;
+		flex-direction: column;
+	}
+	section {
+		padding-top:30px;
+	}
+}
+
+@media (orientation: portrait) {
+	nav {
+		width:100vw;
+		flex-direction: row;
+	}
+	section {
+		padding-top:120px;
+	}
+}
+
+nav a {
+    font-size: 50px;
+    color: #fff;
+    text-decoration: none;
+    padding: 20px;
+    text-align: center;
+    float:left;
+}
+
+
+section h1 {
+    color: #121212;
+    font-size: 30px;
+    opacity: 0;
+}
+
+/* Styles applied on trigger */
+section:target {
+    opacity: 1;
     position: absolute;
     left: 0;
-    top: 0;
-  }
+    width: 100%;
+    height: 100vh;
+    z-index: 10;
 }
 
-html, body{
- background:#fff
+section:target h1 {
+    opacity: 0;
+    animation: 2s fadeIn forwards .5s;
 }
 
-.clear{
- clear:both
+#section1 {
+	background:var(--section1-color);
+}
+#section2 {
+	background: var(--section2-color);
 }
 
-/* Hide the browser's default checkbox */
-.container input {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-  height: 0;
-  width: 0;
+#section3 {
+	background: var(--section3-color);
 }
 
-.checkmark {
- height:25px;
- width:25px;
- padding:8px
+#section4 {
+	background: var(--section4-color);
 }
 
-/* When the checkbox is checked, add a blue background */
-.container input:checked ~ .checkmark {
-  background-color: #ffcaca;
+@keyframes fadeIn {
+    100% { opacity:1 }
 }
-
-.instruments{
-    background:#cdcdcd;
-    position:fixed;
-    top:0;
-    left:0;
-    overflow:visible;
-    border:0;
-    height:1px;
-    width:100%;
-    margin:0;
-    padding:0;
-}
-
-.picker{
-    text-align:center;
-    border-radius:4px;
-    border-collapse: collapse;
-    border:1px solid #cdcdcd;
-	box-sizing: border-box;
-    box-shadow: 8px 5px 5px #aeaeae;
-    background:#FFF;
-    position:relative;
-    float:left;
-    margin-left:5px;
-    padding:0;
-    height:30px;
-    width:30px;
-    cursor:pointer;
-    margin-top:5px;
-    overflow:hidden;
-}
-
-.picker i {
- margin-top: 5px
-}
-
-.picker select, .picker select:hover, .picker select:active{
-	top:-5px;
-	left:-5px;
-	border:0 !important;
-	line-height:30px;
-	height:30px;
-
-}
-
-.picker:hover{
-    border-collapse: collapse;
-	border-radius:4px;
-    border-bottom:4px solid #444;
-}
-
-body, #canvas, #canvasimg{
-    touch-action: none;
-}
-
-input[type="file"] {
-    display: none;
-}
-
 </style>
-<script type="text/javascript">
-let d = console.log
-
-function fTrack(e){
-	trackFinger = e.checked ? true : false;
-}
-
-function hwrToggle(e){
-	hwrEnable = e.checked ? true : false;
-	hwr.style.display = hwrEnable ? 'block' : 'none'
-	handWriting()
-}
-
-var ctx, canvas, isDrawing, hwr, strokesArr = [], points = [ ]
-var hwrEnable = false
-var trackFinger = true
-var img = new Image
-var canvasHistoryLimit = 10
-var brushColor = '#000'
-var fillStyle = '#ffffff'
-var lineWidth = 6
-var strokes = 0
-var canvasHistory = {pos:0,img:[]}
-// configure Nextcloud filedrop directory
-// #{"autosaves":["https://coldborn.com/index.php/s/L2NrRaBw3LHoA8b"]}
-var config = decodeURIComponent(window.location.hash.slice(1))
-
-if(config){
-	try{
-		config = JSON.parse(config)
-	}catch(e){
-		d(e.message)
-		config = null
-	}
-}
-
-async function postData(url = '', method = 'PUT', data = {}) {
-  const response = await fetch(url, {
-    method: method, // *GET, POST, PUT, DELETE, etc.
-    mode: 'cors', // no-cors, *cors, same-origin
-    cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-    credentials: 'same-origin', // include, *same-origin, omit
-    headers: {
-		'Content-Type': 'application/json; charset=utf-8',
-	},
-    redirect: 'follow', // manual, *follow, error
-    referrerPolicy: 'no-referrer',
-    body: (method === 'GET' ? null : JSON.stringify(data) )
-  })
-  return response.json()
-}
-
-async function getWiki(term){
-  let res = await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${term}&limit=1&origin=*`)
-  return res.json()
-}
-
-function setBrushSize(size){
-	lineWidth = size
-}
-
-function upload(data, cb) {
-    img = new Image()
-	img.onload = function() {
-		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-		// scale to fit
-		let scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-		// get the top left position of the image
-		let x = (canvas.width / 2) - (img.width / 2) * scale;
-		let y = (canvas.height / 2) - (img.height / 2) * scale;
-		ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-		img = new Image
-		img.src = canvas.toDataURL("image/png")
-		canvasHistoryPush()
-	}
-	let reader = new FileReader();
-		reader.onload = () => {
-			img.src = reader.result
-		}
-		reader.readAsDataURL(data)
-}
-
-function eraser(){
-	brushColor = fillStyle
-}
-
-function erase(){
-	img = new Image()
-	initCanvas()
-	hwr.innerHTML = ''
-}
-
-function save() {
-  var element = document.createElement('a');
-  element.setAttribute('href', img.src);
-  element.setAttribute('download', 'draw.png');
-  element.style.display = 'none';
-  document.body.appendChild(element);
-  element.click();
-  document.body.removeChild(element);
-}
-
-function initCanvas(){
-	strokesArr = []
-	canvas = document.getElementById('canvas')
-	canvas.style.position = 'absolute'
-	canvas.height = window.innerHeight;
-	canvas.width = window.innerWidth;
-	canvas.style.top = 0
-	canvas.style.left = 0
-	ctx = canvas.getContext('2d')
-	ctx.fillStyle = fillStyle
-	ctx.imageSmoothingEnabled = true
-	ctx.lineJoin = ctx.lineCap = 'round'
-//	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-//	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-//	img.src = canvas.toDataURL("image/png")
-	ctx.drawImage(img, 0, 0, img.width, img.height)
-//	d(window.visualViewport.scale)
-	document.onkeydown = KeyPress;
-}
-
-function KeyPress(e) {
-      var evtobj = window.event? event : e
-      if (evtobj.keyCode == 90 && evtobj.ctrlKey && !evtobj.shiftKey ) canvasHistoryUndo()
-      if (evtobj.keyCode == 90 && evtobj.ctrlKey &&  evtobj.shiftKey ) canvasHistoryRedo()
-}
-
-async function handWriting(){
-	if(!hwrEnable) return false;
-	let res = await postData(
-			'https://www.google.com.tw/inputtools/request?ime=handwriting&app=mobilesearch&cs=1&oe=UTF-8',
-			'POST',
-			{
-				"options": "enable_pre_space",
-				"requests": [{
-					"writing_guide": {
-						"writing_area_width": canvas.width,
-						"writing_area_height": canvas.height
-					},
-					"ink": strokesArr,
-					"language": "en",
-				}]
-			}
-		)
-	if(res[0] === 'SUCCESS'){
-		res = (res[1][0][1].splice(0,4))
-		if(typeof res[0] === 'undefined') return
-		hwr.innerHTML = res.join(', ')
-
-		if(res[0].length < 5 ) return
-		let wiki = await getWiki(res[0])
-		res[0] = `<a href="${wiki[3][0]}" target="_new">${res[0]}</a>`
-		hwr.innerHTML = res[0]//.join(', ')
-		
-	}
-
-}
-function paint(e){
-
-	strokes++
-	points.push({ x: e.clientX, y: e.clientY })
-
-//	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-//	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-//	ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height) // CPU intensive operation (Easy but ugly fix for smooter quadratic curve)
-	ctx.drawImage(img, 0, 0, img.width, img.height)
-
-	ctx.beginPath()
-	ctx.moveTo(points[0].x, points[0].y);
-
-	ctx.strokeStyle = brushColor
-	ctx.lineWidth = lineWidth // (e.pressure * 10) < 0.20 ? e.pressure : e.pressure * 10;
-	for (i = 1; i < points.length - 2; i ++)
-	{
-		var xc = (points[i].x + points[i + 1].x) / 2;
-		var yc = (points[i].y + points[i + 1].y) / 2;
-		ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
-	}
-
-// curve through the last two points
-// ctx.quadraticCurveTo(points[i].x, points[i].y, points[i+1].x,points[i+1].y);
-
-	ctx.stroke()
-	ctx.closePath()
-}
-
-function canvasHistoryUndo(){
-	canvasHistory.pos = canvasHistory.pos - 1 < 0 ?  0 : canvasHistory.pos - 1
-	img = canvasHistory.img[canvasHistory.pos]
-	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-	ctx.drawImage(img, 0, 0, img.width, img.height)
-}
-
-function canvasHistoryRedo(){
-	canvasHistory.pos = canvasHistory.pos + 1 >= canvasHistory.img.length ?  canvasHistory.img.length - 1 : canvasHistory.pos + 1
-	img = canvasHistory.img[canvasHistory.pos]
-	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-	ctx.drawImage(img, 0, 0, img.width, img.height)
-}
-
-function canvasHistoryPush(){
-	img = new Image
-	img.src = canvas.toDataURL("image/png")
-	if( canvasHistory.img.length > canvasHistoryLimit ) canvasHistory.img.shift()
-	canvasHistory.img.push(img)
-	canvasHistory.pos = canvasHistory.img.length - 1
-
-	if(config) for(let url of config.autosaves) postData(url, 'PUT', {img:img.src})
-}
-
-function init() {
-
-	initCanvas()
-	hwr = document.getElementById('hwr')
-	document.getElementById('hwrEnable').checked = (hwrEnable ? 'checked' : false)
-	hwr.style.display = (hwrEnable ? 'block' : 'none')
-	document.getElementById('brushSizePicker').value = lineWidth
-
-	canvas.onpointerdown =  e => {
-		if(e.pointerType == 'touch' && !trackFinger) return;
-		isDrawing = true
-		points.push({ x: e.clientX, y: e.clientY })
-		canvas.addEventListener('pointermove',paint,false)
-	}
-
-	canvas.onpointerup = canvas.onpointerout = (e) => {
-		canvas.removeEventListener('pointermove',paint,false)
-		if(e.type === 'pointerup'){
-			let x = []
-			let y = []
-			for (let i of points)
-			{
-				x.push(i.x)
-				y.push(i.y)
-			}
-			strokesArr.push([x,y])
-			handWriting()
-			canvasHistoryPush()
-		}
-
-		isDrawing = false
-		points = []
-		points.length = 0
-	}
-
-	let myPicker = new JSColor('#cPicker', {format:'rgba'})
-	myPicker.option('previewSize', 400)
-	myPicker.option({
-		'width': 150,
-		'position': 'right',
-		'backgroundColor': '#333',
-		'onChange':color,
-		'value':brushColor,
-		'palette': [
-        '#000000', '#7d7d7d', '#870014', '#ec1c23', '#ff7e26',
-        '#fef100', '#22b14b', '#00a1e7', '#3f47cc', '#a349a4',
-        '#ffffff', '#c3c3c3', '#b87957', '#feaec9', '#ffc80d',
-        '#eee3af', '#b5e61d', '#99d9ea', '#7092be', '#c8bfe7',
-    ],
-	})
-	document.getElementById('cPicker').style.background = brushColor
-}
-
-function printIt(){
-	window.print()
-}
-function color(obj) {
-	brushColor = document.querySelector('#cPicker').dataset.currentColor
-}
+<script>
 
 function toggleFullscreen() {
   let elem = document.querySelector("body")
@@ -391,61 +134,36 @@ function toggleFullscreen() {
     document.exitFullscreen()
   }
   screen.orientation.lock(screen.orientation.type) // Lock to current orientation type
-  initCanvas()
 }
-
-window.onresize = initCanvas;
-
 </script>
 </head>
-<body onload="init()">
-	<canvas id="canvas" style="object-fit:contain;"></canvas>
-    <div class="instruments">
-		<div class="picker" id="cPicker" ondblclick="jscolor.hide()" ></div>
-		<div class="picker" onclick="eraser()"      ><i class="fas fa-eraser"></i></div>
-		<div class="picker" style="width:110px;padding-top:3px">
-			<input style="width:100px" type="range" min="1" max="40" id="brushSizePicker" onchange="setBrushSize(this.value)" />
-		</div>
-		<div class="picker" >
-			<label class="container">
-			<input id="trackFinger" type="checkbox" checked="checked" onchange="fTrack(this)">
-			<span class="checkmark"><i class="fa fa-fingerprint"></i></span>
-			</label>
-        </div>
-		<div class="picker" >
-			<label class="container">
-			<input id="hwrEnable" type="checkbox" checked="checked" onchange="hwrToggle(this)">
-			<span class="checkmark"><i class="fa fa-edit"></i></span>
-			</label>
-		</div>
-		<div class="clear"></div>
-		<div class="picker"     >
-			<label class="custom-file-upload">
-				<input type='file' onchange="upload(this.files[0])"/>
-				<i class="fas fa-upload"></i>
-			</label>
-		</div>
-		<div class="clear"></div>
-		<div class="picker" onclick="save()"        		><i class="fas fa-save"></i></div>
-		<div class="clear"></div>
-		<div class="picker" onclick="toggleFullscreen()"    ><i class="fas fa-expand-arrows-alt"></i></div>
-		<div class="clear"></div>
-		<div class="picker" onclick="location.reload()"     ><i class="fas fa-sync-alt"></i></div>
-		<div class="clear"></div>
-		<div class="picker" onclick="canvasHistoryUndo()"   ><i class="fas fa-undo-alt"></i></div>
-		<div class="clear"></div>
-		<div class="picker" onclick="canvasHistoryRedo()"	><i class="fas fa-redo-alt"></i></div>
-		<div class="clear"></div>
-		<div class="picker" onclick="printIt()"				><i class="fas fa-print"></i></div>
-		<div class="clear"></div>
-		<div class="picker" onclick="erase()"     			><i class="fas fa-window-close"></i></div>
-		<div class="picker" id="hwr" style="width:110px;height:280;padding-top:3px;margin-right:10px;position:fixed;top:0px;right:0">
-		</div>
+<body>
+	<nav>
+		<a href="#section1"><i class="fas fa-user"></i></a>
+		<a href="#section2"><i class="fas fa-briefcase"></i></a>
+		<a href="#section3"><i class="far fa-file"></i></a>
+		<a href="#section4"><i class="far fa-address-card"></i></a>
+	</nav>
+	<div class='container'>
+		<section id='section1'>
+			<img src="https://avatars.githubusercontent.com/u/19834806?v=4" alt="ReeKol" style="border-radius:25px;margin-bottom:20px;height:150px;width:150px"/>
+			<h1>ReeKol</h1><br/>
+			<h1><a href="mailto:cupuyc@gmail.com"   target="_new" >cupuyc@gmail.com</a></h1><br/>
+			<h1><a href="https://github.com/reekol" target="_new" >https://github.com/reekol</a></h1><br/>
+		</section>
+
+		<section id='section2'>
+			<h1>Projects</h1>
+		</section>
+
+		<section id='section3'>
+			<h1>What's new</h1>
+		</section>
+
+		<section id='section4'>
+			<h1>Social</h1>
+		</section>
+		<i onclick="toggleFullscreen()" class="fa fa-expand-arrows-alt"></i>
 	</div>
-
-<style> #debug{ height:100px; overflow:auto; border:1px solid red; } </style>
-<script> var debug = t => { var d = document.getElementById('debug'); d.innerHTML = t + '<br />' + d.innerHTML } </script>
-<div id=debug style="display:none"></div>
-
 </body>
 </html>
